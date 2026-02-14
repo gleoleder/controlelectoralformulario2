@@ -1718,3 +1718,110 @@ body {
   outline: 3px solid var(--ih-cyan);
   outline-offset: 2px;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FORMULARIO DE AGREGAR CANDIDATOS EN SIDEBAR
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.candidatos-form {
+  background: linear-gradient(135deg, #FAF8FF 0%, #F5F3FF 100%);
+  border: 2px solid var(--ih-lila-light);
+}
+
+.form-group-compact {
+  margin-bottom: 12px;
+}
+
+.label-compact {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text2);
+  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+}
+
+.select-input-compact,
+.text-input-compact {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all var(--tr);
+}
+
+.select-input-compact:focus,
+.text-input-compact:focus {
+  outline: none;
+  border-color: var(--ih-violet);
+  box-shadow: 0 0 0 3px rgba(139,92,246,0.1);
+}
+
+.select-input-compact:hover,
+.text-input-compact:hover {
+  border-color: var(--ih-lila);
+}
+
+.text-input-compact::placeholder {
+  color: var(--text4);
+  font-size: 0.8rem;
+}
+
+.color-picker {
+  width: 40px;
+  height: 36px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--tr);
+}
+
+.color-picker:hover {
+  border-color: var(--ih-violet);
+  transform: scale(1.05);
+}
+
+.color-picker::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+
+/* Mejorar scroll del sidebar cuando hay formulario */
+.sidebar {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ih-lila) transparent;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--ih-lila);
+  border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--ih-violet);
+}
+
+/* Responsive para móvil */
+@media (max-width: 768px) {
+  .candidatos-form {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+}
