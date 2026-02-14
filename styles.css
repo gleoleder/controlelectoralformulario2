@@ -1902,27 +1902,46 @@ body {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .leaflet-popup-content-wrapper {
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(109,40,217,0.2);
   border: 2px solid var(--ih-lila-light);
+  padding: 0;
 }
 
 .leaflet-popup-content {
-  margin: 12px 14px;
+  margin: 16px;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .leaflet-popup-tip {
+  background: white;
   border: 2px solid var(--ih-lila-light);
+  box-shadow: none;
 }
 
-/* Mejorar círculos en el mapa */
+.custom-popup .leaflet-popup-content-wrapper {
+  background: white;
+  border-radius: 16px;
+}
+
+.custom-popup .leaflet-popup-close-button {
+  font-size: 24px;
+  color: var(--text3);
+  padding: 8px 12px;
+}
+
+.custom-popup .leaflet-popup-close-button:hover {
+  color: var(--ih-violet);
+}
+
+/* Mejorar círculos en el mapa - SIN HOVER */
 .leaflet-interactive {
-  transition: all 0.2s ease;
+  cursor: pointer;
+  transition: none;
 }
 
-.leaflet-interactive:hover {
-  transform: scale(1.3);
-  filter: brightness(1.1);
+/* Efecto sutil en click */
+.leaflet-interactive:active {
+  transform: scale(1.1);
 }
