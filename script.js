@@ -1,6 +1,6 @@
 // ╔════════════════════════════════════════════════════════════════════════════╗
 // ║                 SISTEMA DE LLENADO ELECTORAL - script.js                    ║
-// ║                      Versión Corregida - Mapa Funcional                      ║
+// ║                      Versión Mejorada - Con Provincia                        ║
 // ╚════════════════════════════════════════════════════════════════════════════╝
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -29,8 +29,8 @@ let gisInited = false;
 let usuarioGoogle = false;
 let emailUsuario = '';
 
-// Cache de candidatos
-let candidatosPorMunicipio = {};
+// Cache de candidatos - AHORA CON CLAVE ÚNICA: departamento-provincia-municipio
+let candidatosPorUbicacion = {};
 
 // Estado del mapa y datos
 let recintos = [];
@@ -276,66 +276,95 @@ async function agregarFilas(nombreHoja, filas) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// CANDIDATOS
+// CANDIDATOS - NUEVO SISTEMA CON DEPARTAMENTO-PROVINCIA-MUNICIPIO
 // ══════════════════════════════════════════════════════════════════════════
-
-const candidatosPredeterminados = [
-    { partido: 'IH', nombre: 'Innovación Humana', color: '#8B5CF6', orden: 1 },
-    { partido: 'MAS-IPSP', nombre: 'MAS-IPSP', color: '#1E3A8A', orden: 2 },
-    { partido: 'CC', nombre: 'Comunidad Ciudadana', color: '#F97316', orden: 3 },
-    { partido: 'CREEMOS', nombre: 'CREEMOS', color: '#15803D', orden: 4 },
-    { partido: 'FPV', nombre: 'Frente Para la Victoria', color: '#DC2626', orden: 5 }
-];
 
 async function cargarCandidatos() {
     if (!usuarioGoogle) return;
 
-    showLoading('Cargando candidatos...');
+    showLoading('Cargando candidatos desde Google Sheets...');
 
     try {
         const candidatos = await leerHojaCompleta(SHEETS.CANDIDATOS);
 
-        candidatosPorMunicipio = {};
+        candidatosPorUbicacion = {};
 
-        if (candidatos && candidatos.length > 0) {
-            candidatos.forEach(c => {
-                const muni = (c.municipio || '').trim();
-                const partido = (c.partido || '').trim();
-                const nombre = (c.candidato || '').trim();
-                const color = (c.color || '').trim();
-                const orden = parseInt(c.orden || 999);
-
-                if (!muni || !partido) return;
-
-                if (!candidatosPorMunicipio[muni]) {
-                    candidatosPorMunicipio[muni] = [];
-                }
-
-                candidatosPorMunicipio[muni].push({
-                    partido,
-                    nombre: nombre || partido,
-                    color: color || '#6B7280',
-                    orden
-                });
-            });
-
-            Object.keys(candidatosPorMunicipio).forEach(muni => {
-                candidatosPorMunicipio[muni].sort((a, b) => a.orden - b.orden);
-            });
-
-            console.log(`✅ Candidatos cargados: ${Object.keys(candidatosPorMunicipio).length} municipios`);
+        if (!candidatos || candidatos.length === 0) {
+            hideLoading();
+            showToast('⚠️ No hay candidatos en Google Sheets. Debes agregar candidatos primero.', 'error');
+            return;
         }
 
+        let errores = [];
+        let procesados = 0;
+
+        candidatos.forEach((c, index) => {
+            const depto = (c.departamento || '').trim();
+            const prov = (c.provincia || '').trim();
+            const muni = (c.municipio || '').trim();
+            const partido = (c.partido || '').trim();
+            const nombre = (c.candidato || '').trim();
+            const color = (c.color || '').trim();
+            const orden = parseInt(c.orden || 999);
+
+            // Validar campos obligatorios
+            if (!depto || !prov || !muni || !partido) {
+                errores.push(`Fila ${index + 2}: Faltan campos obligatorios (departamento, provincia, municipio o partido)`);
+                return;
+            }
+
+            // Crear clave única: Departamento-Provincia-Municipio
+            const clave = `${depto}|${prov}|${muni}`;
+
+            if (!candidatosPorUbicacion[clave]) {
+                candidatosPorUbicacion[clave] = [];
+            }
+
+            candidatosPorUbicacion[clave].push({
+                partido,
+                nombre: nombre || partido,
+                color: color || '#6B7280',
+                orden
+            });
+
+            procesados++;
+        });
+
+        // Ordenar candidatos por orden
+        Object.keys(candidatosPorUbicacion).forEach(clave => {
+            candidatosPorUbicacion[clave].sort((a, b) => a.orden - b.orden);
+        });
+
         hideLoading();
+
+        if (errores.length > 0) {
+            console.warn('⚠️ Errores al cargar candidatos:', errores);
+        }
+
+        const numUbicaciones = Object.keys(candidatosPorUbicacion).length;
+        console.log(`✅ Candidatos cargados: ${procesados} candidatos en ${numUbicaciones} ubicaciones`);
+        showToast(`✅ ${procesados} candidatos cargados en ${numUbicaciones} ubicaciones`, 'success');
+
     } catch (error) {
         hideLoading();
         console.error('Error cargando candidatos:', error);
-        showToast('No se pudieron cargar candidatos, usando predeterminados', 'warning');
+        showToast('❌ Error al cargar candidatos. Verifica la hoja "Candidatos" en Google Sheets.', 'error');
     }
 }
 
-function obtenerCandidatosMunicipio(municipio) {
-    return candidatosPorMunicipio[municipio] || candidatosPredeterminados;
+function obtenerCandidatosRecinto(recinto) {
+    // Crear clave única con departamento, provincia y municipio
+    const clave = `${recinto.d}|${recinto.p}|${recinto.m}`;
+    
+    const candidatos = candidatosPorUbicacion[clave];
+    
+    if (!candidatos || candidatos.length === 0) {
+        // No hay candidatos configurados para esta ubicación
+        console.warn(`⚠️ No hay candidatos para: ${recinto.d} > ${recinto.p} > ${recinto.m}`);
+        return null;
+    }
+    
+    return candidatos;
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -382,7 +411,8 @@ function renderizarMapa() {
         marker.bindPopup(`
             <div style="min-width:200px">
                 <strong>${r.r}</strong><br>
-                <small>${r.m}, ${r.d}</small><br>
+                <small>${r.m}, ${r.p}</small><br>
+                <small>${r.d}</small><br>
                 <small>Código: ${r.c}</small><br>
                 <small>Mesas: ${r.ms || 1}</small><br>
                 <small>Estado: ${estado}</small>
@@ -414,15 +444,23 @@ function getEstadoRecinto(codigo) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// MODAL DE LLENADO
+// MODAL DE LLENADO - MEJORADO CON MEJOR CSS
 // ══════════════════════════════════════════════════════════════════════════
 
 function abrirModal(recinto) {
+    // Verificar si hay candidatos para esta ubicación
+    const candidatos = obtenerCandidatosRecinto(recinto);
+    
+    if (!candidatos) {
+        showToast(`⚠️ No hay candidatos configurados para: ${recinto.d} > ${recinto.p} > ${recinto.m}. Agrégalos en Google Sheets.`, 'warning');
+        return;
+    }
+
     recintoActual = recinto;
     mesaActual = 1;
 
     document.getElementById('modalTitle').textContent = recinto.r;
-    document.getElementById('modalSubtitle').textContent = `${recinto.m}, ${recinto.d} · Código: ${recinto.c}`;
+    document.getElementById('modalSubtitle').textContent = `${recinto.m}, ${recinto.p}, ${recinto.d} · Código: ${recinto.c}`;
 
     renderizarFormularioModal();
 
@@ -432,7 +470,20 @@ function abrirModal(recinto) {
 function renderizarFormularioModal() {
     if (!recintoActual) return;
 
-    const candidatos = obtenerCandidatosMunicipio(recintoActual.m);
+    const candidatos = obtenerCandidatosRecinto(recintoActual);
+    
+    if (!candidatos) {
+        document.getElementById('modalBody').innerHTML = `
+            <div class="error-state">
+                <div class="error-icon">⚠️</div>
+                <h3>No hay candidatos configurados</h3>
+                <p>Para este recinto: <strong>${recintoActual.d} > ${recintoActual.p} > ${recintoActual.m}</strong></p>
+                <p>Por favor, agrega los candidatos en la hoja "Candidatos" de Google Sheets.</p>
+            </div>
+        `;
+        return;
+    }
+
     const totalMesas = recintoActual.ms || 1;
 
     if (!datosLlenados[recintoActual.c]) {
@@ -447,48 +498,84 @@ function renderizarFormularioModal() {
                 const num = i + 1;
                 const activa = num === mesaActual ? 'active' : '';
                 const tieneDatos = datosLlenados[recintoActual.c].mesas[num] ? 'has-data' : '';
-                return `<button class="tab-btn ${activa} ${tieneDatos}" onclick="cambiarMesa(${num})">Mesa ${num}</button>`;
+                return `<button class="tab-btn ${activa} ${tieneDatos}" onclick="cambiarMesa(${num})">
+                    <span class="tab-number">Mesa ${num}</span>
+                    ${tieneDatos ? '<span class="tab-check">✓</span>' : ''}
+                </button>`;
             }).join('')}
         </div>
 
-        <div class="form-group">
-            <label class="form-label">Votos por candidato</label>
-            ${candidatos.map(c => `
-                <div class="input-row">
-                    <div class="partido-badge" style="background: ${c.color}20; color: ${c.color}">
-                        ${c.partido}
-                    </div>
-                    <input 
-                        type="number" 
-                        min="0" 
-                        value="${datosMesa.votos[c.partido] || ''}"
-                        placeholder="0"
-                        class="form-input"
-                        id="voto_${c.partido}"
-                        onchange="guardarVoto('${c.partido}', this.value)"
-                    />
-                </div>
-            `).join('')}
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">Fotos de actas</label>
-            <input 
-                type="file" 
-                accept="image/*" 
-                multiple 
-                class="file-input" 
-                id="inputFotos"
-                onchange="procesarFotos(this.files)"
-            />
-            <div class="fotos-preview" id="fotosPreview">
-                ${(datosMesa.fotos || []).map((url, i) => `
-                    <div class="foto-item">
-                        <img src="${url}" alt="Foto ${i + 1}">
-                        <button onclick="eliminarFoto(${i})" class="btn-delete-foto">✕</button>
+        <div class="form-section">
+            <div class="section-header">
+                <div class="section-icon">🗳️</div>
+                <div class="section-title">Votos por candidato</div>
+            </div>
+            
+            <div class="candidatos-grid">
+                ${candidatos.map(c => `
+                    <div class="candidato-card">
+                        <div class="candidato-header">
+                            <div class="partido-badge" style="background: ${c.color}20; border-left: 4px solid ${c.color}">
+                                <span class="partido-sigla">${c.partido}</span>
+                            </div>
+                            <div class="candidato-nombre">${c.nombre}</div>
+                        </div>
+                        <div class="voto-input-wrapper">
+                            <input 
+                                type="number" 
+                                min="0" 
+                                value="${datosMesa.votos[c.partido] || ''}"
+                                placeholder="0 votos"
+                                class="voto-input"
+                                id="voto_${c.partido}"
+                                onchange="guardarVoto('${c.partido}', this.value)"
+                            />
+                            <span class="voto-label">votos</span>
+                        </div>
                     </div>
                 `).join('')}
             </div>
+        </div>
+
+        <div class="form-section">
+            <div class="section-header">
+                <div class="section-icon">📸</div>
+                <div class="section-title">Fotos de actas</div>
+            </div>
+            
+            <div class="file-upload-area">
+                <input 
+                    type="file" 
+                    accept="image/*" 
+                    multiple 
+                    class="file-input-hidden" 
+                    id="inputFotos"
+                    onchange="procesarFotos(this.files)"
+                />
+                <label for="inputFotos" class="file-upload-label">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">
+                        <strong>Click para subir fotos</strong>
+                        <small>o arrastra las imágenes aquí</small>
+                    </div>
+                </label>
+            </div>
+
+            ${(datosMesa.fotos && datosMesa.fotos.length > 0) ? `
+                <div class="fotos-grid">
+                    ${datosMesa.fotos.map((url, i) => `
+                        <div class="foto-card">
+                            <img src="${url}" alt="Acta ${i + 1}">
+                            <button onclick="eliminarFoto(${i})" class="btn-delete-foto" title="Eliminar foto">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 6L6 18M6 6l12 12"/>
+                                </svg>
+                            </button>
+                            <div class="foto-numero">Foto ${i + 1}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
         </div>
     `;
 
@@ -516,7 +603,7 @@ function guardarVoto(partido, valor) {
 async function procesarFotos(files) {
     if (!files || files.length === 0) return;
 
-    showLoading('Subiendo fotos...');
+    showLoading('Procesando fotos...');
 
     if (!datosLlenados[recintoActual.c].mesas[mesaActual]) {
         datosLlenados[recintoActual.c].mesas[mesaActual] = { votos: {}, fotos: [] };
@@ -560,7 +647,7 @@ function calcularTotales(codigo) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// GUARDAR DATOS
+// GUARDAR DATOS - ACTUALIZADO CON PROVINCIA
 // ══════════════════════════════════════════════════════════════════════════
 
 async function guardarDatos() {
@@ -581,10 +668,10 @@ async function guardarDatos() {
 
     try {
         const totales = calcularTotales(codigo);
-        const candidatos = obtenerCandidatosMunicipio(recintoActual.m);
+        const candidatos = obtenerCandidatosRecinto(recintoActual);
         const timestamp = new Date().toLocaleString('es-BO');
 
-        // Preparar resultados
+        // Preparar resultados - AHORA CON PROVINCIA
         const filasResultados = [];
         Object.entries(totales).forEach(([partido, votos]) => {
             const cand = candidatos.find(c => c.partido === partido);
@@ -593,7 +680,9 @@ async function guardarDatos() {
 
             filasResultados.push([
                 codigo,
-                recintoActual.m,
+                recintoActual.d,      // Departamento
+                recintoActual.p,      // Provincia
+                recintoActual.m,      // Municipio
                 partido,
                 cand?.nombre || partido,
                 votos,
@@ -656,7 +745,7 @@ async function guardarDatos() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// CARGAR DATOS EXISTENTES
+// CARGAR DATOS EXISTENTES - ACTUALIZADO
 // ══════════════════════════════════════════════════════════════════════════
 
 async function cargarDatosExistentes() {
