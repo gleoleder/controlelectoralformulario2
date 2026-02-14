@@ -68,6 +68,9 @@ function inicializarMapa() {
 
         markersLayer = L.layerGroup().addTo(map);
         
+        // Configurar eventos de zoom
+        configurarEventosZoom();
+        
         console.log('✅ Mapa inicializado correctamente');
     } catch (error) {
         console.error('❌ Error al inicializar mapa:', error);
@@ -393,6 +396,23 @@ function renderizarMapa() {
         return matchDep && matchEstado && matchBusq;
     });
 
+    // Obtener nivel de zoom actual
+    const zoom = map.getZoom();
+    
+    // Calcular radio del marcador según zoom
+    let radius;
+    if (zoom <= 6) {
+        radius = 3;  // Bolivia completa - muy pequeños
+    } else if (zoom <= 8) {
+        radius = 4;  // Departamento
+    } else if (zoom <= 10) {
+        radius = 5;  // Provincia
+    } else if (zoom <= 12) {
+        radius = 6;  // Municipio
+    } else {
+        radius = 7;  // Muy cerca
+    }
+
     recintosFiltrados.forEach(r => {
         const estado = getEstadoRecinto(r.c);
         let color = '#9CA3AF';
@@ -408,69 +428,112 @@ function renderizarMapa() {
         }
 
         const marker = L.circleMarker([r.la, r.lo], {
-            radius: 6,
+            radius: radius,
             fillColor: color,
-            color: 'none',  // Sin borde
+            color: 'none',
             weight: 0,
-            opacity: 0.8,   // Con transparencia
-            fillOpacity: 0.7
+            opacity: 0.85,
+            fillOpacity: 0.75
         });
 
         // Crear contenido del popup con preview de resultados
         let popupContent = `
-            <div style="min-width:220px">
-                <strong style="font-size:0.95rem">${r.r}</strong><br>
-                <small style="color:#666">${r.m}, ${r.p}</small><br>
-                <small style="color:#666">${r.d}</small><br>
-                <small style="color:#888">Código: ${r.c} · Mesas: ${r.ms || 1}</small><br>
-                <small style="color:#888;font-weight:600">Estado: ${estado}</small>
+            <div style="min-width:240px;font-family:'Plus Jakarta Sans',sans-serif">
+                <div style="margin-bottom:8px">
+                    <strong style="font-size:1rem;color:#1E1B2E">${r.r}</strong><br>
+                    <span style="font-size:0.85rem;color:#6B6780">${r.m}, ${r.p}</span><br>
+                    <span style="font-size:0.85rem;color:#6B6780">${r.d}</span>
+                </div>
+                <div style="display:flex;gap:12px;font-size:0.8rem;color:#9F9BB0;margin-bottom:8px">
+                    <span>Código: <strong>${r.c}</strong></span>
+                    <span>Mesas: <strong>${r.ms || 1}</strong></span>
+                </div>
+                <div style="padding:4px 8px;background:#F5F3FF;border-radius:6px;font-size:0.8rem;font-weight:600;color:#7C3AED;display:inline-block">
+                    ${estado}
+                </div>
         `;
 
         // Si tiene datos, mostrar preview de resultados
         if (estado === 'Completado' || estado === 'Parcial') {
             const totales = datosLlenados[r.c]?.totales || {};
             if (Object.keys(totales).length > 0) {
-                popupContent += `<hr style="margin:8px 0;border:none;border-top:1px solid #ddd">`;
-                popupContent += `<div style="font-size:0.85rem;font-weight:600;margin-bottom:4px">Resultados:</div>`;
+                const totalVotos = Object.values(totales).reduce((a, b) => a + b, 0);
+                
+                popupContent += `
+                    <div style="margin-top:12px;padding-top:12px;border-top:2px solid #E9D5FF">
+                        <div style="font-size:0.9rem;font-weight:700;color:#1E1B2E;margin-bottom:8px">
+                            📊 Resultados (${totalVotos} votos)
+                        </div>
+                `;
                 
                 // Ordenar por votos descendente
                 const resultadosOrdenados = Object.entries(totales)
                     .sort((a, b) => b[1] - a[1])
-                    .slice(0, 5); // Mostrar top 5
+                    .slice(0, 5);
                 
-                resultadosOrdenados.forEach(([partido, votos]) => {
+                resultadosOrdenados.forEach(([partido, votos], index) => {
                     const candidatos = obtenerCandidatosRecinto(r);
                     const cand = candidatos?.find(c => c.partido === partido);
                     const colorPartido = cand?.color || '#6B7280';
+                    const porcentaje = ((votos / totalVotos) * 100).toFixed(1);
                     
                     popupContent += `
-                        <div style="display:flex;align-items:center;gap:6px;margin:3px 0">
-                            <div style="width:12px;height:12px;border-radius:3px;background:${colorPartido}"></div>
-                            <span style="font-size:0.8rem;font-weight:600">${partido}</span>
-                            <span style="margin-left:auto;font-size:0.8rem;font-weight:700">${votos}</span>
+                        <div style="margin:6px 0">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+                                <div style="width:16px;height:16px;border-radius:4px;background:${colorPartido};flex-shrink:0"></div>
+                                <span style="font-size:0.85rem;font-weight:700;color:#44405A;flex:1">${partido}</span>
+                                <span style="font-size:0.85rem;font-weight:700;color:#1E1B2E">${votos}</span>
+                                <span style="font-size:0.75rem;color:#9F9BB0">(${porcentaje}%)</span>
+                            </div>
+                            <div style="height:6px;background:#F5F3FF;border-radius:3px;overflow:hidden">
+                                <div style="height:100%;background:${colorPartido};width:${porcentaje}%;transition:width 0.3s ease"></div>
+                            </div>
                         </div>
                     `;
                 });
+                
+                popupContent += `</div>`;
             }
         }
 
-        popupContent += `</div>`;
+        popupContent += `
+                <div style="margin-top:12px;padding-top:12px;border-top:2px solid #E9D5FF;text-align:center">
+                    <small style="color:#9F9BB0;font-size:0.75rem">
+                        💡 Click nuevamente para ${estado === 'Pendiente' ? 'llenar datos' : 'editar datos'}
+                    </small>
+                </div>
+            </div>
+        `;
 
-        marker.bindPopup(popupContent);
-        
-        // Abrir popup en hover
-        marker.on('mouseover', function(e) {
-            this.openPopup();
-        });
-        
-        // Cerrar popup cuando el mouse sale
-        marker.on('mouseout', function(e) {
-            this.closePopup();
+        // Bind popup
+        marker.bindPopup(popupContent, {
+            maxWidth: 300,
+            className: 'custom-popup'
         });
 
-        // Abrir modal en click
-        marker.on('click', () => abrirModal(r));
-        
+        // Variable para rastrear si el popup está abierto
+        let popupAbierto = false;
+
+        // Primer click: abrir/cerrar popup
+        // Segundo click: abrir modal
+        marker.on('click', function(e) {
+            if (!popupAbierto) {
+                // Primer click: abrir popup
+                this.openPopup();
+                popupAbierto = true;
+            } else {
+                // Segundo click: cerrar popup y abrir modal
+                this.closePopup();
+                popupAbierto = false;
+                abrirModal(r);
+            }
+        });
+
+        // Cuando se cierra el popup (por cualquier razón), resetear estado
+        marker.on('popupclose', function() {
+            popupAbierto = false;
+        });
+
         marker.addTo(markersLayer);
     });
 
@@ -507,6 +570,13 @@ function obtenerPartidoGanador(codigo) {
     // Obtener el color del partido ganador
     const cand = candidatos.find(c => c.partido === partidoGanador);
     return cand ? { partido: partidoGanador, color: cand.color } : null;
+}
+
+// Actualizar tamaño de marcadores cuando cambia el zoom
+function configurarEventosZoom() {
+    map.on('zoomend', function() {
+        renderizarMapa();
+    });
 }
 
 function getEstadoRecinto(codigo) {
