@@ -48,7 +48,7 @@ body {
 }
 
 .header-logo {
-  height:38px;
+  height:46px;
   width:auto;
 }
 
@@ -1941,7 +1941,7 @@ body {
   transition: none;
 }
 
-/* Efecto sutil en click */
+/* No transform on click - prevents displacement */
 .leaflet-interactive:active {
-  transform: scale(1.1);
+  /* intentionally no transform */
 }
