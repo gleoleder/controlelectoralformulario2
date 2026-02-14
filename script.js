@@ -1,7 +1,6 @@
 // ╔════════════════════════════════════════════════════════════════════════════╗
 // ║                 SISTEMA DE LLENADO ELECTORAL - script.js                    ║
 // ║                      Versión Mejorada - Con Provincia                        ║
-// ║                         CORREGIDO: Click en marcadores                       ║
 // ╚════════════════════════════════════════════════════════════════════════════╝
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -434,16 +433,14 @@ function renderizarMapa() {
             color: 'none',
             weight: 0,
             opacity: 0.85,
-            fillOpacity: 0.75
+            fillOpacity: 0.75,
+            bubblingMouseEvents: false
         });
 
-        // ✅ CORREGIDO: Click con preventDefault
-        marker.on('click', (e) => {
-            // Prevenir que el click se propague al mapa
-            if (e.originalEvent) {
-                e.originalEvent.stopPropagation();
-            }
-            // Abrir el modal
+        // Click: abrir formulario directamente (stop propagation to prevent map pan)
+        marker.on('click', function(e) {
+            L.DomEvent.stopPropagation(e);
+            L.DomEvent.preventDefault(e);
             abrirModal(r);
         });
         
@@ -485,10 +482,14 @@ function obtenerPartidoGanador(codigo) {
     return cand ? { partido: partidoGanador, color: cand.color } : null;
 }
 
-// Actualizar tamaño de marcadores cuando cambia el zoom
+// Actualizar tamaño de marcadores cuando cambia el zoom (debounced)
+let zoomTimeout = null;
 function configurarEventosZoom() {
     map.on('zoomend', function() {
-        renderizarMapa();
+        if (zoomTimeout) clearTimeout(zoomTimeout);
+        zoomTimeout = setTimeout(function() {
+            renderizarMapa();
+        }, 150);
     });
 }
 
@@ -514,8 +515,6 @@ function getEstadoRecinto(codigo) {
 // ══════════════════════════════════════════════════════════════════════════
 
 function abrirModal(recinto) {
-    console.log('📋 Abriendo modal para:', recinto.r);
-    
     // Verificar si hay candidatos para esta ubicación
     const candidatos = obtenerCandidatosRecinto(recinto);
     
@@ -532,10 +531,7 @@ function abrirModal(recinto) {
 
     renderizarFormularioModal();
 
-    // ✅ Usar setTimeout para asegurar que el modal se renderice
-    setTimeout(() => {
-        document.getElementById('modalLlenado').classList.add('open');
-    }, 10);
+    document.getElementById('modalLlenado').classList.add('open');
 }
 
 function renderizarFormularioModal() {
