@@ -1,6 +1,7 @@
 // ╔════════════════════════════════════════════════════════════════════════════╗
 // ║                 SISTEMA DE LLENADO ELECTORAL - script.js                    ║
 // ║                      Versión Mejorada - Con Provincia                        ║
+// ║                         CORREGIDO: Click en marcadores                       ║
 // ╚════════════════════════════════════════════════════════════════════════════╝
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -436,8 +437,15 @@ function renderizarMapa() {
             fillOpacity: 0.75
         });
 
-        // Click: abrir formulario directamente
-        marker.on('click', () => abrirModal(r));
+        // ✅ CORREGIDO: Click con preventDefault
+        marker.on('click', (e) => {
+            // Prevenir que el click se propague al mapa
+            if (e.originalEvent) {
+                e.originalEvent.stopPropagation();
+            }
+            // Abrir el modal
+            abrirModal(r);
+        });
         
         marker.addTo(markersLayer);
     });
@@ -506,6 +514,8 @@ function getEstadoRecinto(codigo) {
 // ══════════════════════════════════════════════════════════════════════════
 
 function abrirModal(recinto) {
+    console.log('📋 Abriendo modal para:', recinto.r);
+    
     // Verificar si hay candidatos para esta ubicación
     const candidatos = obtenerCandidatosRecinto(recinto);
     
@@ -522,7 +532,10 @@ function abrirModal(recinto) {
 
     renderizarFormularioModal();
 
-    document.getElementById('modalLlenado').classList.add('open');
+    // ✅ Usar setTimeout para asegurar que el modal se renderice
+    setTimeout(() => {
+        document.getElementById('modalLlenado').classList.add('open');
+    }, 10);
 }
 
 function renderizarFormularioModal() {
