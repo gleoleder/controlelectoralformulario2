@@ -20,6 +20,11 @@ const CONFIG = {
     API_KEY: 'AIzaSyAOhGTjJXHhuUhqf1g2DPCla59xNzftb-Q',
     
     // ══════════════════════════════════════════════════════════════════════════
+    // CARPETA DE GOOGLE DRIVE PARA FOTOS DE ACTAS
+    // ══════════════════════════════════════════════════════════════════════════
+    DRIVE_FOLDER_ID: '1tEVa2dh87V-Ed389JWFnQiL8vxE-0UdV',
+    
+    // ══════════════════════════════════════════════════════════════════════════
     // NOMBRES DE LAS HOJAS DE LA BASE DE DATOS
     // ══════════════════════════════════════════════════════════════════════════
     SHEETS: {
