@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Llenado de Datos · Control Electoral 2026</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -15,10 +15,10 @@
     <div class="header-brand">
       <img src="innovacion-humana.webp" alt="IH" class="header-logo"/>
       <div class="header-sep"></div>
-      <span class="header-title">Llenado de Datos · Control Electoral 2026</span>
+      <span class="header-title">Control Electoral 2026</span>
     </div>
     <div class="header-stats" id="hdrStats">
-      <span class="hdr-pill" id="statCargados">0 recintos cargados</span>
+      <span class="hdr-pill" id="statCargados">0 cargados</span>
       <span class="hdr-pill warn" id="statPendientes">5,741 pendientes</span>
     </div>
     <div class="google-connection">
@@ -41,9 +41,12 @@
 
   <div class="layout">
     <aside class="sidebar" id="sidebar">
-      <div class="sb-section">
+      <div class="sb-section search-section">
         <div class="sb-label">Buscar recinto</div>
-        <input type="text" id="searchRecinto" placeholder="Código o nombre del recinto..." class="search-input">
+        <div class="search-wrapper">
+          <input type="text" id="searchRecinto" placeholder="Código o nombre..." class="search-input" autocomplete="off">
+          <div class="search-results" id="searchResults"></div>
+        </div>
       </div>
       
       <div class="sb-section">
@@ -74,7 +77,7 @@
           <div class="info-label">Instrucciones</div>
           <div class="info-text">
             1. Conecta con Google<br>
-            2. Haz click en un recinto del mapa<br>
+            2. Busca o haz click en un recinto<br>
             3. Llena los datos por mesa<br>
             4. Sube las fotos de actas<br>
             5. Guarda los datos
@@ -150,8 +153,24 @@
             <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
           </svg>
         </button>
+        <!-- Buscador móvil flotante -->
+        <button class="mobile-btn" id="btnMobileSearch" title="Buscar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </button>
+      </div>
+      <!-- Buscador flotante para móvil -->
+      <div class="mobile-search-bar" id="mobileSearchBar">
+        <div class="mobile-search-inner">
+          <input type="text" id="mobileSearchInput" placeholder="Buscar recinto..." class="search-input" autocomplete="off">
+          <button class="mobile-search-close" id="btnCloseMobileSearch">✕</button>
+        </div>
+        <div class="search-results mobile-search-results" id="mobileSearchResults"></div>
       </div>
       <div id="map"></div>
+      <!-- Crédito -->
+      <div class="map-credit">@Elaborado por: John Leonardo Cabrera Espíndola</div>
     </main>
   </div>
 
@@ -159,9 +178,12 @@
   <div class="modal" id="modalLlenado">
     <div class="modal-content">
       <div class="modal-header">
-        <div>
-          <h2 id="modalTitle">Llenado de Datos</h2>
-          <p id="modalSubtitle" class="modal-subtitle"></p>
+        <div class="modal-header-info">
+          <img src="innovacion-humana.webp" alt="IH" class="modal-logo"/>
+          <div>
+            <h2 id="modalTitle">Llenado de Datos</h2>
+            <p id="modalSubtitle" class="modal-subtitle"></p>
+          </div>
         </div>
         <button class="modal-close" id="btnCloseModal">✕</button>
       </div>
@@ -190,16 +212,9 @@
   </div>
 
   <!-- ORDEN CORRECTO DE CARGA -->
-  <!-- 1. Primero data.js (contiene R con los recintos) -->
   <script src="data.js"></script>
-  
-  <!-- 2. Luego config.js (contiene CONFIG) -->
   <script src="config.js"></script>
-  
-  <!-- 3. Después script.js (usa CONFIG y R) -->
   <script src="script.js"></script>
-  
-  <!-- 4. Finalmente Google APIs (llaman a gapiLoaded y gisLoaded) -->
   <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
   <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 
