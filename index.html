@@ -81,6 +81,66 @@
           </div>
         </div>
       </div>
+
+      <!-- FORMULARIO DE AGREGAR CANDIDATOS -->
+      <div class="sb-section" style="padding-top:20px">
+        <div class="info-card candidatos-form">
+          <div class="info-label">➕ Agregar Candidato</div>
+          
+          <div class="form-group-compact">
+            <label class="label-compact">Departamento</label>
+            <select id="candidatoDepartamento" class="select-input-compact">
+              <option value="">Seleccionar...</option>
+            </select>
+          </div>
+
+          <div class="form-group-compact">
+            <label class="label-compact">Provincia</label>
+            <select id="candidatoProvincia" class="select-input-compact">
+              <option value="">Seleccionar...</option>
+            </select>
+          </div>
+
+          <div class="form-group-compact">
+            <label class="label-compact">Municipio</label>
+            <select id="candidatoMunicipio" class="select-input-compact">
+              <option value="">Seleccionar...</option>
+            </select>
+          </div>
+
+          <div class="form-group-compact">
+            <label class="label-compact">Partido</label>
+            <input type="text" id="candidatoPartido" class="text-input-compact" placeholder="Ej: IH">
+          </div>
+
+          <div class="form-group-compact">
+            <label class="label-compact">Candidato</label>
+            <input type="text" id="candidatoNombre" class="text-input-compact" placeholder="Ej: Iván Arias">
+          </div>
+
+          <div class="form-group-compact">
+            <label class="label-compact">Cargo</label>
+            <input type="text" id="candidatoCargo" class="text-input-compact" placeholder="Ej: Alcalde" value="Alcalde">
+          </div>
+
+          <div class="form-group-compact">
+            <label class="label-compact">Color (HEX)</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="color" id="candidatoColorPicker" class="color-picker" value="#8B5CF6">
+              <input type="text" id="candidatoColor" class="text-input-compact" placeholder="#8B5CF6" value="#8B5CF6" style="flex:1">
+            </div>
+          </div>
+
+          <div class="form-group-compact">
+            <label class="label-compact">Orden</label>
+            <input type="number" id="candidatoOrden" class="text-input-compact" placeholder="1" value="1" min="1">
+          </div>
+
+          <button onclick="agregarCandidato()" class="btn-primary" style="width:100%;margin-top:12px">
+            💾 Guardar Candidato
+          </button>
+        </div>
+      </div>
     </aside>
 
     <main class="map-wrap">
