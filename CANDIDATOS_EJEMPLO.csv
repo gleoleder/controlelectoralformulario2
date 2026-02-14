@@ -1,0 +1,63 @@
+municipio,partido,candidato,cargo,color,orden
+La Paz,IH,Iván Arias,Alcalde,#8B5CF6,1
+La Paz,MAS-IPSP,David Apaza,Alcalde,#1E3A8A,2
+La Paz,CC,María Fernández,Alcalde,#F97316,3
+La Paz,CREEMOS,Roberto Gómez,Alcalde,#15803D,4
+La Paz,FPV,Patricia Silva,Alcalde,#DC2626,5
+El Alto,IH,Eva Copa,Alcalde,#8B5CF6,1
+El Alto,MAS-IPSP,Zacarías Maquera,Alcalde,#1E3A8A,2
+El Alto,CC,Francisco Gutiérrez,Alcalde,#F97316,3
+El Alto,CREEMOS,Carmen Rojas,Alcalde,#15803D,4
+Cochabamba,IH,Manfred Reyes Villa,Alcalde,#8B5CF6,1
+Cochabamba,MAS-IPSP,José María Leyes,Alcalde,#1E3A8A,2
+Cochabamba,CC,Andrea Barrientos,Alcalde,#F97316,3
+Cochabamba,FPV,Marco Soliz,Alcalde,#DC2626,4
+Santa Cruz de la Sierra,IH,Percy Fernández,Alcalde,#8B5CF6,1
+Santa Cruz de la Sierra,MAS-IPSP,Angélica Sosa,Alcalde,#1E3A8A,2
+Santa Cruz de la Sierra,CC,Soledad Chapetón,Alcalde,#F97316,3
+Santa Cruz de la Sierra,CREEMOS,Rómulo Calvo,Alcalde,#15803D,4
+Oruro,IH,Carlos Aparicio,Alcalde,#8B5CF6,1
+Oruro,MAS-IPSP,Saúl Aguilar,Alcalde,#1E3A8A,2
+Oruro,CC,Mónica Quiroga,Alcalde,#F97316,3
+Potosí,IH,Jhonny Llally,Alcalde,#8B5CF6,1
+Potosí,MAS-IPSP,William Cervantes,Alcalde,#1E3A8A,2
+Potosí,CC,Ruth Nina,Alcalde,#F97316,3
+Tarija,IH,Rodrigo Paz,Alcalde,#8B5CF6,1
+Tarija,MAS-IPSP,Johnny Torres,Alcalde,#1E3A8A,2
+Tarija,CC,Rodrigo Paz Pereira,Alcalde,#F97316,3
+Sucre,IH,Enrique Leaño,Alcalde,#8B5CF6,1
+Sucre,MAS-IPSP,Javier Zabaleta,Alcalde,#1E3A8A,2
+Sucre,CC,Verónica Berrios,Alcalde,#F97316,3
+Trinidad,IH,Moisés Moye,Alcalde,#8B5CF6,1
+Trinidad,MAS-IPSP,Eva Temo,Alcalde,#1E3A8A,2
+Trinidad,CC,Severino Copa,Alcalde,#F97316,3
+Cobija,IH,Ana Lucía Reis,Alcalde,#8B5CF6,1
+Cobija,MAS-IPSP,Luis Gatty Ribeiro,Alcalde,#1E3A8A,2
+Cobija,CC,Roberto Fernández,Alcalde,#F97316,3
+Viacha,IH,Ancelmo Aruquipa,Alcalde,#8B5CF6,1
+Viacha,MAS-IPSP,Feliciano Mamani,Alcalde,#1E3A8A,2
+Viacha,CC,Jhonny Poma,Alcalde,#F97316,3
+Achacachi,IH,Eugenio Rojas,Alcalde,#8B5CF6,1
+Achacachi,MAS-IPSP,Marcelino Calle,Alcalde,#1E3A8A,2
+Achacachi,PDC,Lucio Bautista,Alcalde,#07626B,3
+Quillacollo,IH,Alberto Bustos,Alcalde,#8B5CF6,1
+Quillacollo,MAS-IPSP,Marcelo Condori,Alcalde,#1E3A8A,2
+Quillacollo,CC,Patricia Arce,Alcalde,#F97316,3
+Sacaba,IH,Humberto Sánchez,Alcalde,#8B5CF6,1
+Sacaba,MAS-IPSP,Humberto Sánchez,Alcalde,#1E3A8A,2
+Sacaba,CC,Marlene Ardaya,Alcalde,#F97316,3
+Montero,IH,Shirley Herbas,Alcalde,#8B5CF6,1
+Montero,MAS-IPSP,René Joaquino,Alcalde,#1E3A8A,2
+Montero,CC,Roberto Mustafá,Alcalde,#F97316,3
+Warnes,IH,Mario Cronenbold,Alcalde,#8B5CF6,1
+Warnes,MAS-IPSP,Luis Arias,Alcalde,#1E3A8A,2
+Warnes,CC,Alcides Vargas,Alcalde,#F97316,3
+Yacuiba,IH,Álvaro Ruiz,Alcalde,#8B5CF6,1
+Yacuiba,MAS-IPSP,Iver Arce,Alcalde,#1E3A8A,2
+Yacuiba,CC,Milenka Figueroa,Alcalde,#F97316,3
+Riberalta,IH,Néstor Fernández,Alcalde,#8B5CF6,1
+Riberalta,MAS-IPSP,Fanor Nava,Alcalde,#1E3A8A,2
+Riberalta,CC,Modesto Caballero,Alcalde,#F97316,3
+Guayaramerín,IH,Suzana Cossio,Alcalde,#8B5CF6,1
+Guayaramerín,MAS-IPSP,Eulogio Núñez,Alcalde,#1E3A8A,2
+Guayaramerín,CC,Óscar Monasterio,Alcalde,#F97316,3
