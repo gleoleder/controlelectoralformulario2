@@ -1545,6 +1545,35 @@ body {
   transform: scale(0.95);
 }
 
+.btn-view-foto {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 28px;
+  height: 28px;
+  background: rgba(139,92,246,0.85);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 14px;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all var(--tr);
+  z-index: 2;
+}
+
+.foto-card:hover .btn-view-foto {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.btn-view-foto:hover {
+  background: rgba(109,40,217,1);
+  transform: scale(1.1);
+}
+
 .foto-numero {
   position: absolute;
   bottom: 0;
