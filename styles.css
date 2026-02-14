@@ -1301,74 +1301,94 @@ body {
   letter-spacing: -0.02em;
 }
 
-/* Grid de candidatos mejorado */
+/* Grid de candidatos mejorado - ÁNFORAS VERTICALES */
 .candidatos-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
   margin-top: 16px;
 }
 
 .candidato-card {
-  background: linear-gradient(135deg, #FFFFFF 0%, #FAF8FF 100%);
-  border-radius: var(--radius);
-  padding: 16px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
+  background: white;
+  border-radius: 16px;
+  padding: 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border: none;
   transition: all var(--tr);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .candidato-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
-  border-color: var(--ih-violet);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  transform: translateY(-4px);
 }
 
 .candidato-header {
-  margin-bottom: 12px;
+  margin-bottom: 0;
+  padding: 16px 12px;
+  text-align: center;
+  /* El color de fondo se aplicará dinámicamente desde el JS */
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
 }
 
 .partido-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 14px;
+  display: inline-block;
+  padding: 6px 12px;
   border-radius: 20px;
-  margin-bottom: 8px;
-  font-weight: 700;
-  font-size: 0.75rem;
+  margin-bottom: 4px;
+  font-weight: 800;
+  font-size: 0.85rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  background: rgba(255,255,255,0.25);
+  color: white;
+  border: 2px solid rgba(255,255,255,0.4);
+  backdrop-filter: blur(10px);
   transition: all var(--tr);
 }
 
 .candidato-card:hover .partido-badge {
-  transform: scale(1.05);
+  transform: scale(1.08);
+  background: rgba(255,255,255,0.35);
 }
 
 .partido-sigla {
   font-family: 'JetBrains Mono', monospace;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .candidato-nombre {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text2);
-  line-height: 1.4;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: white;
+  line-height: 1.3;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  text-align: center;
 }
 
-/* Input de votos mejorado */
+/* Input de votos mejorado - MÁS COMPACTO */
 .voto-input-wrapper {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 6px;
+  padding: 12px 8px;
+  background: white;
 }
 
 .voto-input {
-  flex: 1;
-  padding: 12px 16px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  width: 100%;
+  padding: 10px 8px;
+  font-size: 1.3rem;
+  font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
   border: 2px solid var(--border);
   border-radius: var(--radius-sm);
@@ -1381,8 +1401,8 @@ body {
 .voto-input:focus {
   outline: none;
   border-color: var(--ih-violet);
-  box-shadow: 0 0 0 4px rgba(139,92,246,0.1);
-  transform: scale(1.02);
+  box-shadow: 0 0 0 3px rgba(139,92,246,0.15);
+  transform: scale(1.03);
 }
 
 .voto-input:hover {
@@ -1392,13 +1412,15 @@ body {
 .voto-input::placeholder {
   color: var(--text4);
   font-weight: 400;
+  font-size: 0.9rem;
 }
 
 .voto-label {
-  font-size: 0.85rem;
-  font-weight: 500;
+  font-size: 0.7rem;
+  font-weight: 600;
   color: var(--text3);
-  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* Área de subida de archivos mejorada */
@@ -1544,21 +1566,21 @@ body {
   transform: translateY(0);
 }
 
-/* Tabs de mesas mejoradas */
+/* Tabs de mesas mejoradas - MÁS COMPACTAS */
 .modal-tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
-  padding: 8px;
+  gap: 6px;
+  margin-bottom: 20px;
+  padding: 6px;
   background: var(--surface2);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   overflow-x: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--ih-lila) transparent;
 }
 
 .modal-tabs::-webkit-scrollbar {
-  height: 6px;
+  height: 4px;
 }
 
 .modal-tabs::-webkit-scrollbar-track {
@@ -1567,38 +1589,38 @@ body {
 
 .modal-tabs::-webkit-scrollbar-thumb {
   background: var(--ih-lila);
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .tab-btn {
   flex-shrink: 0;
-  padding: 12px 20px;
+  padding: 8px 14px;
   border: 2px solid var(--border);
   border-radius: var(--radius-sm);
   background: white;
   color: var(--text2);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: all var(--tr);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   position: relative;
 }
 
 .tab-btn:hover {
   border-color: var(--ih-lila);
   background: var(--ih-lila-light);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(139,92,246,0.2);
 }
 
 .tab-btn.active {
   background: linear-gradient(135deg, var(--ih-violet) 0%, var(--ih-violet-deep) 100%);
   color: white;
   border-color: var(--ih-violet);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 12px rgba(139,92,246,0.3);
 }
 
 .tab-btn.has-data {
@@ -1608,22 +1630,23 @@ body {
 .tab-btn.has-data::before {
   content: '';
   position: absolute;
-  top: -4px;
-  right: -4px;
-  width: 12px;
-  height: 12px;
+  top: -3px;
+  right: -3px;
+  width: 10px;
+  height: 10px;
   background: #10B981;
   border-radius: 50%;
   border: 2px solid white;
-  box-shadow: 0 2px 8px rgba(16,185,129,0.4);
+  box-shadow: 0 2px 6px rgba(16,185,129,0.4);
 }
 
 .tab-number {
   font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
 }
 
 .tab-check {
-  font-size: 16px;
+  font-size: 14px;
   opacity: 0.7;
 }
 
@@ -1687,8 +1710,35 @@ body {
 /* Responsive para móviles */
 @media (max-width: 768px) {
   .candidatos-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .candidato-card {
+    border-radius: 12px;
+  }
+
+  .candidato-header {
+    padding: 12px 8px;
+    min-height: 120px;
+  }
+
+  .partido-badge {
+    padding: 4px 10px;
+    font-size: 0.75rem;
+  }
+
+  .candidato-nombre {
+    font-size: 0.75rem;
+  }
+
+  .voto-input {
+    padding: 8px 6px;
+    font-size: 1.1rem;
+  }
+
+  .voto-label {
+    font-size: 0.65rem;
   }
 
   .fotos-grid {
@@ -1701,13 +1751,34 @@ body {
   }
 
   .modal-tabs {
-    gap: 6px;
-    padding: 6px;
+    gap: 4px;
+    padding: 4px;
   }
 
   .tab-btn {
-    padding: 10px 16px;
-    font-size: 0.85rem;
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .candidatos-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .candidato-header {
+    padding: 10px 6px;
+    min-height: 100px;
+  }
+
+  .partido-badge {
+    padding: 3px 8px;
+    font-size: 0.7rem;
+  }
+
+  .candidato-nombre {
+    font-size: 0.7rem;
   }
 }
 
@@ -1824,4 +1895,34 @@ body {
     max-height: 400px;
     overflow-y: auto;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ESTILOS PARA POPUPS DE LEAFLET
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  border: 2px solid var(--ih-lila-light);
+}
+
+.leaflet-popup-content {
+  margin: 12px 14px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  line-height: 1.6;
+}
+
+.leaflet-popup-tip {
+  border: 2px solid var(--ih-lila-light);
+}
+
+/* Mejorar círculos en el mapa */
+.leaflet-interactive {
+  transition: all 0.2s ease;
+}
+
+.leaflet-interactive:hover {
+  transform: scale(1.3);
+  filter: brightness(1.1);
 }
