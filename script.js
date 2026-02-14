@@ -359,7 +359,7 @@ function renderizarMapa() {
         const matchEstado = estadoSeleccionado === 'Todos' || getEstadoRecinto(r.c) === estadoSeleccionado;
         const matchBusq = !busqueda ||
             r.c.toLowerCase().includes(busqueda) ||
-            r.n.toLowerCase().includes(busqueda) ||
+            r.r.toLowerCase().includes(busqueda) ||
             r.m.toLowerCase().includes(busqueda);
         return matchDep && matchEstado && matchBusq;
     });
@@ -370,7 +370,7 @@ function renderizarMapa() {
         if (estado === 'Completado') color = '#10B981';
         else if (estado === 'Parcial') color = '#F59E0B';
 
-        const marker = L.circleMarker([r.lat, r.lon], {
+        const marker = L.circleMarker([r.la, r.lo], {
             radius: 6,
             fillColor: color,
             color: '#fff',
@@ -381,9 +381,10 @@ function renderizarMapa() {
 
         marker.bindPopup(`
             <div style="min-width:200px">
-                <strong>${r.n}</strong><br>
+                <strong>${r.r}</strong><br>
                 <small>${r.m}, ${r.d}</small><br>
                 <small>Código: ${r.c}</small><br>
+                <small>Mesas: ${r.ms || 1}</small><br>
                 <small>Estado: ${estado}</small>
             </div>
         `);
@@ -404,7 +405,7 @@ function getEstadoRecinto(codigo) {
     const recinto = recintos.find(r => r.c === codigo);
     if (!recinto) return 'Pendiente';
 
-    const totalMesas = recinto.m || 1;
+    const totalMesas = recinto.ms || 1;
     const mesasConDatos = Object.keys(datos.mesas).length;
 
     if (mesasConDatos >= totalMesas) return 'Completado';
@@ -420,7 +421,7 @@ function abrirModal(recinto) {
     recintoActual = recinto;
     mesaActual = 1;
 
-    document.getElementById('modalTitle').textContent = recinto.n;
+    document.getElementById('modalTitle').textContent = recinto.r;
     document.getElementById('modalSubtitle').textContent = `${recinto.m}, ${recinto.d} · Código: ${recinto.c}`;
 
     renderizarFormularioModal();
@@ -432,7 +433,7 @@ function renderizarFormularioModal() {
     if (!recintoActual) return;
 
     const candidatos = obtenerCandidatosMunicipio(recintoActual.m);
-    const totalMesas = recintoActual.m || 1;
+    const totalMesas = recintoActual.ms || 1;
 
     if (!datosLlenados[recintoActual.c]) {
         datosLlenados[recintoActual.c] = { mesas: {}, totales: {} };
