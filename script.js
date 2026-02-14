@@ -13,9 +13,11 @@ const SPREADSHEET_ID = CONFIG.GOOGLE_SHEET_ID;
 const SHEETS = CONFIG.SHEETS;
 
 const DISCOVERY_DOC = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
+const DRIVE_DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
 
 const SCOPES =
     'https://www.googleapis.com/auth/spreadsheets ' +
+    'https://www.googleapis.com/auth/drive.file ' +
     'https://www.googleapis.com/auth/userinfo.profile ' +
     'https://www.googleapis.com/auth/userinfo.email';
 
@@ -90,10 +92,10 @@ async function initializeGapiClient() {
     try {
         await gapi.client.init({
             apiKey: API_KEY,
-            discoveryDocs: [DISCOVERY_DOC]
+            discoveryDocs: [DISCOVERY_DOC, DRIVE_DISCOVERY_DOC]
         });
         gapiInited = true;
-        console.log('✅ Google API inicializada');
+        console.log('✅ Google API inicializada (Sheets + Drive)');
         checkReady();
     } catch (e) {
         console.error('❌ Error GAPI:', e);
@@ -622,8 +624,8 @@ function renderizarFormularioModal() {
                 <label for="inputFotos" class="file-upload-label">
                     <div class="upload-icon">📁</div>
                     <div class="upload-text">
-                        <strong>Click para subir fotos</strong>
-                        <small>o arrastra las imágenes aquí</small>
+                        <strong>Click para subir fotos a Google Drive</strong>
+                        <small>Se guardarán en tu carpeta de actas electorales</small>
                     </div>
                 </label>
             </div>
@@ -632,7 +634,10 @@ function renderizarFormularioModal() {
                 <div class="fotos-grid">
                     ${datosMesa.fotos.map((url, i) => `
                         <div class="foto-card">
-                            <img src="${url}" alt="Acta ${i + 1}">
+                            <img src="${url}" alt="Acta ${i + 1}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23f3f4f6%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22%239ca3af%22 font-size=%2214%22>📷 Drive</text></svg>'">
+                            <a href="${url.replace('uc?export=view&', 'file/d/').replace('id=', '').replace(/$/,'') }" target="_blank" class="btn-view-foto" title="Ver en Drive">
+                                🔗
+                            </a>
                             <button onclick="eliminarFoto(${i})" class="btn-delete-foto" title="Eliminar foto">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M18 6L6 18M6 6l12 12"/>
@@ -670,24 +675,172 @@ function guardarVoto(partido, valor) {
 async function procesarFotos(files) {
     if (!files || files.length === 0) return;
 
-    showLoading('Procesando fotos...');
+    if (!usuarioGoogle) {
+        showToast('⚠️ Debes conectarte con Google primero para subir fotos', 'warning');
+        return;
+    }
 
     if (!datosLlenados[recintoActual.c].mesas[mesaActual]) {
         datosLlenados[recintoActual.c].mesas[mesaActual] = { votos: {}, fotos: [] };
     }
 
+    const totalFiles = files.length;
+    let subidas = 0;
+    let errores = 0;
+
+    showLoading(`Subiendo foto 1 de ${totalFiles} a Google Drive...`);
+
     for (const file of files) {
-        const reader = new FileReader();
-        reader.onload = e => {
-            const base64 = e.target.result;
-            datosLlenados[recintoActual.c].mesas[mesaActual].fotos.push(base64);
-            renderizarFormularioModal();
-        };
-        reader.readAsDataURL(file);
+        try {
+            subidas++;
+            document.getElementById('loadingText').textContent = 
+                `Subiendo foto ${subidas} de ${totalFiles} a Google Drive...`;
+
+            const driveUrl = await subirFotoADrive(file);
+            
+            if (driveUrl) {
+                datosLlenados[recintoActual.c].mesas[mesaActual].fotos.push(driveUrl);
+                console.log(`✅ Foto subida: ${driveUrl}`);
+            } else {
+                errores++;
+                console.error('❌ No se obtuvo URL de Drive');
+            }
+        } catch (error) {
+            errores++;
+            console.error('❌ Error subiendo foto:', error);
+        }
     }
 
     hideLoading();
-    showToast(`✅ ${files.length} foto(s) agregada(s)`, 'success');
+    renderizarFormularioModal();
+
+    if (errores > 0) {
+        showToast(`⚠️ ${subidas - errores} foto(s) subida(s), ${errores} con error`, 'warning');
+    } else {
+        showToast(`✅ ${subidas} foto(s) subida(s) a Google Drive`, 'success');
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// SUBIDA DE FOTOS A GOOGLE DRIVE
+// ══════════════════════════════════════════════════════════════════════════
+
+async function subirFotoADrive(file) {
+    const token = gapi.client.getToken();
+    if (!token) {
+        throw new Error('No hay token de autenticación');
+    }
+
+    // Generar nombre descriptivo para el archivo
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const codigo = recintoActual.c;
+    const mesa = mesaActual;
+    const nombreArchivo = `acta_${codigo}_mesa${mesa}_${timestamp}_${file.name}`;
+
+    // Metadata del archivo para Drive
+    const metadata = {
+        name: nombreArchivo,
+        mimeType: file.type,
+        parents: [CONFIG.DRIVE_FOLDER_ID]
+    };
+
+    // Crear multipart request (metadata + archivo)
+    const boundary = '-------314159265358979323846';
+    const delimiter = '\r\n--' + boundary + '\r\n';
+    const closeDelimiter = '\r\n--' + boundary + '--';
+
+    // Leer archivo como ArrayBuffer
+    const fileContent = await leerArchivoComoArrayBuffer(file);
+    
+    // Construir el body multipart manualmente
+    const metadataPart = delimiter +
+        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+        JSON.stringify(metadata);
+
+    const filePart = delimiter +
+        'Content-Type: ' + file.type + '\r\n' +
+        'Content-Transfer-Encoding: base64\r\n\r\n';
+
+    // Convertir ArrayBuffer a base64
+    const base64Data = arrayBufferToBase64(fileContent);
+
+    const requestBody = metadataPart + filePart + base64Data + closeDelimiter;
+
+    // Subir a Google Drive usando fetch (multipart upload)
+    const response = await fetch(
+        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink,webContentLink',
+        {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token.access_token,
+                'Content-Type': 'multipart/related; boundary=' + boundary
+            },
+            body: requestBody
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error Drive API:', errorData);
+        throw new Error(`Error ${response.status}: ${errorData.error?.message || 'Error desconocido'}`);
+    }
+
+    const result = await response.json();
+    console.log('📁 Archivo creado en Drive:', result);
+
+    // Hacer el archivo público para que se pueda ver
+    await hacerArchivoPublico(result.id, token.access_token);
+
+    // Retornar URL directa de la imagen
+    const urlDirecta = `https://drive.google.com/uc?export=view&id=${result.id}`;
+    return urlDirecta;
+}
+
+async function hacerArchivoPublico(fileId, accessToken) {
+    try {
+        const response = await fetch(
+            `https://www.googleapis.com/drive/v3/files/${fileId}/permissions`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + accessToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    role: 'reader',
+                    type: 'anyone'
+                })
+            }
+        );
+
+        if (!response.ok) {
+            console.warn('⚠️ No se pudo hacer público el archivo, pero se subió correctamente');
+        } else {
+            console.log('🔓 Archivo hecho público');
+        }
+    } catch (e) {
+        console.warn('⚠️ Error al cambiar permisos:', e);
+    }
+}
+
+function leerArchivoComoArrayBuffer(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Error leyendo archivo'));
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+function arrayBufferToBase64(buffer) {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, i + chunkSize);
+        binary += String.fromCharCode.apply(null, chunk);
+    }
+    return btoa(binary);
 }
 
 function eliminarFoto(index) {
