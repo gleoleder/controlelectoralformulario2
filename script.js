@@ -421,7 +421,7 @@ function renderizarMapa() {
 
     recintosFiltrados.forEach(r => {
         const estado = getEstadoRecinto(r.c);
-        let color = '#9CA3AF';
+        let color = '#5C6370';
         
         // Si tiene datos, colorear según el partido ganador
         if (estado === 'Completado' || estado === 'Parcial') {
@@ -438,8 +438,8 @@ function renderizarMapa() {
             fillColor: color,
             color: 'none',
             weight: 0,
-            opacity: 0.85,
-            fillOpacity: 0.75,
+            opacity: 0.9,
+            fillOpacity: 0.85,
             bubblingMouseEvents: false
         });
 
