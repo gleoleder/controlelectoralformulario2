@@ -396,34 +396,117 @@ function renderizarMapa() {
     recintosFiltrados.forEach(r => {
         const estado = getEstadoRecinto(r.c);
         let color = '#9CA3AF';
-        if (estado === 'Completado') color = '#10B981';
-        else if (estado === 'Parcial') color = '#F59E0B';
+        
+        // Si tiene datos, colorear según el partido ganador
+        if (estado === 'Completado' || estado === 'Parcial') {
+            const partidoGanador = obtenerPartidoGanador(r.c);
+            if (partidoGanador) {
+                color = partidoGanador.color;
+            } else {
+                color = estado === 'Completado' ? '#10B981' : '#F59E0B';
+            }
+        }
 
         const marker = L.circleMarker([r.la, r.lo], {
             radius: 6,
             fillColor: color,
-            color: '#fff',
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.8
+            color: 'none',  // Sin borde
+            weight: 0,
+            opacity: 0.8,   // Con transparencia
+            fillOpacity: 0.7
         });
 
-        marker.bindPopup(`
-            <div style="min-width:200px">
-                <strong>${r.r}</strong><br>
-                <small>${r.m}, ${r.p}</small><br>
-                <small>${r.d}</small><br>
-                <small>Código: ${r.c}</small><br>
-                <small>Mesas: ${r.ms || 1}</small><br>
-                <small>Estado: ${estado}</small>
-            </div>
-        `);
+        // Crear contenido del popup con preview de resultados
+        let popupContent = `
+            <div style="min-width:220px">
+                <strong style="font-size:0.95rem">${r.r}</strong><br>
+                <small style="color:#666">${r.m}, ${r.p}</small><br>
+                <small style="color:#666">${r.d}</small><br>
+                <small style="color:#888">Código: ${r.c} · Mesas: ${r.ms || 1}</small><br>
+                <small style="color:#888;font-weight:600">Estado: ${estado}</small>
+        `;
 
+        // Si tiene datos, mostrar preview de resultados
+        if (estado === 'Completado' || estado === 'Parcial') {
+            const totales = datosLlenados[r.c]?.totales || {};
+            if (Object.keys(totales).length > 0) {
+                popupContent += `<hr style="margin:8px 0;border:none;border-top:1px solid #ddd">`;
+                popupContent += `<div style="font-size:0.85rem;font-weight:600;margin-bottom:4px">Resultados:</div>`;
+                
+                // Ordenar por votos descendente
+                const resultadosOrdenados = Object.entries(totales)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5); // Mostrar top 5
+                
+                resultadosOrdenados.forEach(([partido, votos]) => {
+                    const candidatos = obtenerCandidatosRecinto(r);
+                    const cand = candidatos?.find(c => c.partido === partido);
+                    const colorPartido = cand?.color || '#6B7280';
+                    
+                    popupContent += `
+                        <div style="display:flex;align-items:center;gap:6px;margin:3px 0">
+                            <div style="width:12px;height:12px;border-radius:3px;background:${colorPartido}"></div>
+                            <span style="font-size:0.8rem;font-weight:600">${partido}</span>
+                            <span style="margin-left:auto;font-size:0.8rem;font-weight:700">${votos}</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        popupContent += `</div>`;
+
+        marker.bindPopup(popupContent);
+        
+        // Abrir popup en hover
+        marker.on('mouseover', function(e) {
+            this.openPopup();
+        });
+        
+        // Cerrar popup cuando el mouse sale
+        marker.on('mouseout', function(e) {
+            this.closePopup();
+        });
+
+        // Abrir modal en click
         marker.on('click', () => abrirModal(r));
+        
         marker.addTo(markersLayer);
     });
 
     actualizarEstadisticas();
+}
+
+// Nueva función para obtener el partido ganador
+function obtenerPartidoGanador(codigo) {
+    const datos = datosLlenados[codigo];
+    if (!datos || !datos.totales || Object.keys(datos.totales).length === 0) {
+        return null;
+    }
+
+    const totales = datos.totales;
+    const recinto = recintos.find(r => r.c === codigo);
+    if (!recinto) return null;
+
+    const candidatos = obtenerCandidatosRecinto(recinto);
+    if (!candidatos) return null;
+
+    // Encontrar el partido con más votos
+    let maxVotos = 0;
+    let partidoGanador = null;
+
+    Object.entries(totales).forEach(([partido, votos]) => {
+        if (votos > maxVotos) {
+            maxVotos = votos;
+            partidoGanador = partido;
+        }
+    });
+
+    if (!partidoGanador) return null;
+
+    // Obtener el color del partido ganador
+    const cand = candidatos.find(c => c.partido === partidoGanador);
+    return cand ? { partido: partidoGanador, color: cand.color } : null;
 }
 
 function getEstadoRecinto(codigo) {
@@ -514,8 +597,8 @@ function renderizarFormularioModal() {
             <div class="candidatos-grid">
                 ${candidatos.map(c => `
                     <div class="candidato-card">
-                        <div class="candidato-header">
-                            <div class="partido-badge" style="background: ${c.color}20; border-left: 4px solid ${c.color}">
+                        <div class="candidato-header" style="background: ${c.color};">
+                            <div class="partido-badge">
                                 <span class="partido-sigla">${c.partido}</span>
                             </div>
                             <div class="candidato-nombre">${c.nombre}</div>
@@ -525,7 +608,7 @@ function renderizarFormularioModal() {
                                 type="number" 
                                 min="0" 
                                 value="${datosMesa.votos[c.partido] || ''}"
-                                placeholder="0 votos"
+                                placeholder="0"
                                 class="voto-input"
                                 id="voto_${c.partido}"
                                 onchange="guardarVoto('${c.partido}', this.value)"
