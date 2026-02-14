@@ -401,18 +401,22 @@ function renderizarMapa() {
     // Obtener nivel de zoom actual
     const zoom = map.getZoom();
     
-    // Calcular radio del marcador según zoom
+    // Calcular radio del marcador según zoom - MÁS PEQUEÑOS para evitar sobreposición
     let radius;
     if (zoom <= 6) {
-        radius = 3;  // Bolivia completa - muy pequeños
+        radius = 1.5;  // Bolivia completa - muy pequeños
+    } else if (zoom <= 7) {
+        radius = 2;    // Vista general
     } else if (zoom <= 8) {
-        radius = 4;  // Departamento
+        radius = 2.5;  // Departamento
     } else if (zoom <= 10) {
-        radius = 5;  // Provincia
+        radius = 3.5;  // Provincia
     } else if (zoom <= 12) {
-        radius = 6;  // Municipio
+        radius = 5;    // Municipio
+    } else if (zoom <= 14) {
+        radius = 6;    // Cerca
     } else {
-        radius = 7;  // Muy cerca
+        radius = 8;    // Muy cerca
     }
 
     recintosFiltrados.forEach(r => {
@@ -510,6 +514,111 @@ function getEstadoRecinto(codigo) {
     if (mesasConDatos >= totalMesas) return 'Completado';
     if (mesasConDatos > 0) return 'Parcial';
     return 'Pendiente';
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// BÚSQUEDA EN TIEMPO REAL
+// ══════════════════════════════════════════════════════════════════════════
+
+let searchTimeout = null;
+
+function busquedaEnTiempoReal(texto, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    // Limpiar timeout anterior (debounce)
+    if (searchTimeout) clearTimeout(searchTimeout);
+    
+    const query = texto.trim().toLowerCase();
+    
+    if (query.length < 1) {
+        container.innerHTML = '';
+        container.classList.remove('show');
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        // Buscar en recintos
+        const resultados = recintos.filter(r => {
+            return r.c.toLowerCase().includes(query) ||
+                   r.r.toLowerCase().includes(query) ||
+                   r.m.toLowerCase().includes(query) ||
+                   r.d.toLowerCase().includes(query);
+        }).slice(0, 15); // Máximo 15 resultados
+        
+        if (resultados.length === 0) {
+            container.innerHTML = '<div class="search-no-results">No se encontraron recintos</div>';
+            container.classList.add('show');
+            return;
+        }
+        
+        let html = '';
+        resultados.forEach(r => {
+            const estado = getEstadoRecinto(r.c);
+            const estadoIcon = estado === 'Completado' ? '✅' : estado === 'Parcial' ? '⚠️' : '⏳';
+            
+            // Resaltar coincidencia
+            const nombreResaltado = resaltarTexto(r.r, query);
+            const codigoResaltado = resaltarTexto(r.c, query);
+            
+            html += `
+                <div class="search-result-item" onclick="seleccionarRecintoBusqueda('${r.c}', '${containerId}')">
+                    <div class="search-result-main">
+                        <span class="search-result-estado">${estadoIcon}</span>
+                        <div class="search-result-info">
+                            <div class="search-result-nombre">${nombreResaltado}</div>
+                            <div class="search-result-detalle">${codigoResaltado} · ${r.m}, ${r.d}</div>
+                        </div>
+                    </div>
+                    <div class="search-result-mesas">${r.ms || 1} mesa${(r.ms || 1) > 1 ? 's' : ''}</div>
+                </div>
+            `;
+        });
+        
+        if (recintos.filter(r => {
+            return r.c.toLowerCase().includes(query) ||
+                   r.r.toLowerCase().includes(query) ||
+                   r.m.toLowerCase().includes(query) ||
+                   r.d.toLowerCase().includes(query);
+        }).length > 15) {
+            html += '<div class="search-more">Mostrando 15 de más resultados...</div>';
+        }
+        
+        container.innerHTML = html;
+        container.classList.add('show');
+    }, 120); // 120ms debounce
+}
+
+function resaltarTexto(texto, query) {
+    if (!query) return texto;
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return texto.replace(regex, '<mark>$1</mark>');
+}
+
+function seleccionarRecintoBusqueda(codigo, containerId) {
+    const recinto = recintos.find(r => r.c === codigo);
+    if (!recinto) return;
+    
+    // Cerrar resultados
+    document.getElementById(containerId).innerHTML = '';
+    document.getElementById(containerId).classList.remove('show');
+    
+    // Cerrar barra de búsqueda móvil si aplica
+    document.getElementById('mobileSearchBar')?.classList.remove('show');
+    
+    // Cerrar sidebar en móvil
+    if (window.innerWidth <= 768) {
+        document.getElementById('sidebar').classList.remove('show');
+        document.getElementById('btnToggleSidebar')?.classList.remove('active');
+    }
+    
+    // Centrar mapa en el recinto
+    map.setView([recinto.la, recinto.lo], 14, { animate: true });
+    
+    // Abrir modal después de centrar
+    setTimeout(() => {
+        abrirModal(recinto);
+    }, 400);
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -1306,7 +1415,54 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('selDep')?.addEventListener('change', renderizarMapa);
     document.getElementById('selEstado')?.addEventListener('change', renderizarMapa);
-    document.getElementById('searchRecinto')?.addEventListener('input', renderizarMapa);
+    
+    // BÚSQUEDA EN TIEMPO REAL - Sidebar
+    const searchInput = document.getElementById('searchRecinto');
+    searchInput?.addEventListener('input', function() {
+        busquedaEnTiempoReal(this.value, 'searchResults');
+        renderizarMapa();
+    });
+    searchInput?.addEventListener('focus', function() {
+        if (this.value.length >= 1) {
+            busquedaEnTiempoReal(this.value, 'searchResults');
+        }
+    });
+    
+    // Cerrar resultados al hacer click fuera
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.search-wrapper') && !e.target.closest('.mobile-search-bar')) {
+            document.getElementById('searchResults').innerHTML = '';
+            document.getElementById('searchResults').classList.remove('show');
+            document.getElementById('mobileSearchResults').innerHTML = '';
+            document.getElementById('mobileSearchResults').classList.remove('show');
+        }
+    });
+    
+    // BÚSQUEDA MÓVIL
+    const mobileSearchInput = document.getElementById('mobileSearchInput');
+    mobileSearchInput?.addEventListener('input', function() {
+        busquedaEnTiempoReal(this.value, 'mobileSearchResults');
+    });
+    mobileSearchInput?.addEventListener('focus', function() {
+        if (this.value.length >= 1) {
+            busquedaEnTiempoReal(this.value, 'mobileSearchResults');
+        }
+    });
+    
+    document.getElementById('btnMobileSearch')?.addEventListener('click', function() {
+        const bar = document.getElementById('mobileSearchBar');
+        bar.classList.toggle('show');
+        if (bar.classList.contains('show')) {
+            mobileSearchInput.focus();
+        }
+    });
+    
+    document.getElementById('btnCloseMobileSearch')?.addEventListener('click', function() {
+        document.getElementById('mobileSearchBar').classList.remove('show');
+        mobileSearchInput.value = '';
+        document.getElementById('mobileSearchResults').innerHTML = '';
+        document.getElementById('mobileSearchResults').classList.remove('show');
+    });
 
     // Event listeners para formulario de candidatos
     document.getElementById('candidatoDepartamento')?.addEventListener('change', actualizarProvincias);
@@ -1320,7 +1476,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.addEventListener('click', e => {
         if (window.innerWidth <= 768) {
-            if (!e.target.closest('.sidebar') && !e.target.closest('#btnToggleSidebar')) {
+            if (!e.target.closest('.sidebar') && !e.target.closest('#btnToggleSidebar') && !e.target.closest('.mobile-search-bar')) {
                 document.getElementById('sidebar').classList.remove('show');
                 document.getElementById('btnToggleSidebar')?.classList.remove('active');
             }
