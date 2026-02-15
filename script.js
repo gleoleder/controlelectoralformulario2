@@ -754,10 +754,16 @@ function renderizarFormularioModal() {
 
             ${(datosMesa.fotos && datosMesa.fotos.length > 0) ? `
                 <div class="fotos-grid">
-                    ${datosMesa.fotos.map((url, i) => `
+                    ${datosMesa.fotos.map((url, i) => {
+                        let fid='';
+                        if(url.includes('id='))fid=url.split('id=')[1]?.split('&')[0];
+                        else if(url.includes('/d/'))fid=url.split('/d/')[1]?.split('/')[0];
+                        const thumb=fid?'https://lh3.googleusercontent.com/d/'+fid+'=s400':url;
+                        const openUrl=fid?'https://drive.google.com/file/d/'+fid+'/view':url;
+                        return `
                         <div class="foto-card">
-                            <img src="${url}" alt="Acta ${i + 1}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23f3f4f6%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22%239ca3af%22 font-size=%2214%22>📷 Drive</text></svg>'">
-                            <a href="${url.replace('uc?export=view&', 'file/d/').replace('id=', '').replace(/$/,'') }" target="_blank" class="btn-view-foto" title="Ver en Drive">
+                            <img src="${thumb}" alt="Acta ${i + 1}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23f3f4f6%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22%239ca3af%22 font-size=%2214%22>📷 Drive</text></svg>'">
+                            <a href="${openUrl}" target="_blank" class="btn-view-foto" title="Ver en Drive">
                                 🔗
                             </a>
                             <button onclick="eliminarFoto(${i})" class="btn-delete-foto" title="Eliminar foto">
@@ -765,9 +771,9 @@ function renderizarFormularioModal() {
                                     <path d="M18 6L6 18M6 6l12 12"/>
                                 </svg>
                             </button>
-                            <div class="foto-numero">Foto ${i + 1}</div>
+                            <div class="foto-numero">Mesa ${mesaActual} · Foto ${i + 1}</div>
                         </div>
-                    `).join('')}
+                    `}).join('')}
                 </div>
             ` : ''}
         </div>
