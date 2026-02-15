@@ -713,6 +713,19 @@ function renderizarFormularioModal() {
                     </div>
                 `).join('')}
             </div>
+            
+            <div class="votos-especiales">
+                <div class="voto-especial-card nulos">
+                    <span class="voto-especial-label">✖ Votos Nulos</span>
+                    <input type="number" min="0" value="${datosMesa.votos['NULOS'] || ''}" placeholder="0" class="voto-input voto-especial-input"
+                        onchange="guardarVoto('NULOS', this.value)"/>
+                </div>
+                <div class="voto-especial-card blancos">
+                    <span class="voto-especial-label">◻ Votos en Blanco</span>
+                    <input type="number" min="0" value="${datosMesa.votos['BLANCOS'] || ''}" placeholder="0" class="voto-input voto-especial-input"
+                        onchange="guardarVoto('BLANCOS', this.value)"/>
+                </div>
+            </div>
         </div>
 
         <div class="form-section">
@@ -996,28 +1009,39 @@ async function guardarDatos() {
     showLoading('Guardando en Google Sheets...');
 
     try {
-        const totales = calcularTotales(codigo);
         const candidatos = obtenerCandidatosRecinto(recintoActual);
         const timestamp = new Date().toLocaleString('es-BO');
 
-        // Preparar resultados - AHORA CON PROVINCIA
-        const filasResultados = [];
-        Object.entries(totales).forEach(([partido, votos]) => {
-            const cand = candidatos.find(c => c.partido === partido);
-            const totalVotos = Object.values(totales).reduce((a, b) => a + b, 0);
-            const porcentaje = totalVotos > 0 ? ((votos / totalVotos) * 100).toFixed(2) : 0;
+        // Primero borrar filas existentes de este recinto para permitir actualizaciones
+        await borrarFilasRecinto(SHEETS.RESULTADOS, codigo);
 
-            filasResultados.push([
-                codigo,
-                recintoActual.d,      // Departamento
-                recintoActual.p,      // Provincia
-                recintoActual.m,      // Municipio
-                partido,
-                cand?.nombre || partido,
-                votos,
-                porcentaje,
-                timestamp
-            ]);
+        // Preparar resultados POR MESA (no totales)
+        const filasResultados = [];
+        Object.entries(datos.mesas).forEach(([numMesa, mesa]) => {
+            if (!mesa.votos || Object.keys(mesa.votos).length === 0) return;
+            
+            // Calcular total de esta mesa para porcentaje
+            const totalMesa = Object.values(mesa.votos).reduce((a, b) => a + parseInt(b || 0), 0);
+            
+            Object.entries(mesa.votos).forEach(([partido, votos]) => {
+                const v = parseInt(votos || 0);
+                if (v === 0 && partido !== 'NULOS' && partido !== 'BLANCOS') return;
+                const cand = candidatos.find(c => c.partido === partido);
+                const porcentaje = totalMesa > 0 ? ((v / totalMesa) * 100).toFixed(2) : 0;
+
+                filasResultados.push([
+                    codigo,
+                    recintoActual.d,      // Departamento
+                    recintoActual.p,      // Provincia
+                    recintoActual.m,      // Municipio
+                    partido,
+                    cand?.nombre || partido,
+                    v,
+                    porcentaje,
+                    parseInt(numMesa),     // Mesa number
+                    timestamp
+                ]);
+            });
         });
 
         // Preparar fotos
@@ -1047,21 +1071,24 @@ async function guardarDatos() {
             promesas.push(agregarFilas(SHEETS.FOTOS, filasFotos));
         }
 
+        // Calcular totales para log
+        const totales = calcularTotales(codigo);
+        const totalVotos = Object.values(totales).reduce((a, b) => a + b, 0);
+
         // Log
         const filaLog = [[
             timestamp,
             codigo,
             'GUARDADO',
             emailUsuario || 'Sistema Web',
-            `${filasResultados.length} resultados, ${filasFotos.length} fotos`
+            `${filasResultados.length} resultados en ${Object.keys(datos.mesas).length} mesa(s), ${filasFotos.length} fotos, ${totalVotos} votos`
         ]];
         promesas.push(agregarFilas(SHEETS.LOG, filaLog));
 
         await Promise.all(promesas);
 
         hideLoading();
-        const totalVotos = Object.values(totales).reduce((a, b) => a + b, 0);
-        showToast(`✅ Datos guardados: ${totalVotos} votos totales`, 'success');
+        showToast(`✅ Datos guardados: ${totalVotos} votos en ${Object.keys(datos.mesas).length} mesa(s)`, 'success');
 
         cerrarModal();
         renderizarMapa();
@@ -1070,6 +1097,52 @@ async function guardarDatos() {
         hideLoading();
         showToast('❌ Error al guardar: ' + error.message, 'error');
         console.error('Error:', error);
+    }
+}
+
+// Borrar filas existentes de un recinto para actualización
+async function borrarFilasRecinto(nombreHoja, codigo) {
+    try {
+        const response = await gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: SPREADSHEET_ID,
+            range: nombreHoja
+        });
+        const rows = response.result.values;
+        if (!rows || rows.length <= 1) return;
+        
+        // Find rows with matching codigo (column A = index 0)
+        const filasABorrar = [];
+        for (let i = rows.length - 1; i >= 1; i--) {
+            if (String(rows[i][0] || '').trim() === String(codigo).trim()) {
+                filasABorrar.push(i);
+            }
+        }
+        
+        if (filasABorrar.length === 0) return;
+        
+        // Get sheet ID
+        const metaResponse = await gapi.client.sheets.spreadsheets.get({
+            spreadsheetId: SPREADSHEET_ID
+        });
+        const sheet = metaResponse.result.sheets.find(s => s.properties.title === nombreHoja);
+        if (!sheet) return;
+        const sheetId = sheet.properties.sheetId;
+        
+        // Delete rows from bottom to top to preserve indices
+        const requests = filasABorrar.map(rowIndex => ({
+            deleteDimension: {
+                range: { sheetId: sheetId, dimension: 'ROWS', startIndex: rowIndex, endIndex: rowIndex + 1 }
+            }
+        }));
+        
+        await gapi.client.sheets.spreadsheets.batchUpdate({
+            spreadsheetId: SPREADSHEET_ID,
+            resource: { requests }
+        });
+        
+        console.log(`🗑️ Borradas ${filasABorrar.length} filas de ${nombreHoja} para ${codigo}`);
+    } catch (e) {
+        console.warn('No se pudieron borrar filas existentes (puede ser primera vez):', e.message);
     }
 }
 
@@ -1094,16 +1167,18 @@ async function cargarDatosExistentes() {
                 const codigo = String(r.codigo || '').trim();
                 const partido = (r.partido || '').trim();
                 const votos = parseInt(r.votos || 0);
+                // Read mesa column - default to 1 for legacy data without mesa column
+                const numMesa = parseInt(r.mesa || '1') || 1;
 
                 if (!codigo || !partido) return;
 
                 if (!datosLlenados[codigo]) {
                     datosLlenados[codigo] = { mesas: {}, totales: {} };
                 }
-                if (!datosLlenados[codigo].mesas[1]) {
-                    datosLlenados[codigo].mesas[1] = { votos: {}, fotos: [] };
+                if (!datosLlenados[codigo].mesas[numMesa]) {
+                    datosLlenados[codigo].mesas[numMesa] = { votos: {}, fotos: [] };
                 }
-                datosLlenados[codigo].mesas[1].votos[partido] = votos;
+                datosLlenados[codigo].mesas[numMesa].votos[partido] = votos;
             });
         }
 
@@ -1128,11 +1203,7 @@ async function cargarDatosExistentes() {
         }
 
         Object.keys(datosLlenados).forEach(codigo => {
-            const recinto = recintos.find(r => r.c === codigo);
-            if (recinto) {
-                recintoActual = recinto;
-                calcularTotales(codigo);
-            }
+            calcularTotales(codigo);
         });
 
         hideLoading();
