@@ -785,6 +785,14 @@ function renderizarFormularioModal() {
 function cambiarMesa(numero) {
     mesaActual = numero;
     renderizarFormularioModal();
+    // Scroll active tab into view
+    setTimeout(()=>{
+        const activeTab = document.querySelector('.tab-btn.active');
+        if(activeTab) activeTab.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+        // Also scroll modal body to top of form content
+        const modalBody = document.getElementById('modalBody');
+        if(modalBody) modalBody.scrollTop = 0;
+    },50);
 }
 
 function guardarVoto(partido, valor) {
@@ -1430,6 +1438,38 @@ function cerrarModal() {
 // UI HELPERS
 // ══════════════════════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════════════════════
+// GPS UBICACIÓN
+// ══════════════════════════════════════════════════════════════════════════
+
+let gpsMarker = null;
+function activarGPS() {
+    if (!navigator.geolocation) {
+        showToast('GPS no disponible en este dispositivo', 'error');
+        return;
+    }
+    showToast('Obteniendo ubicación...', 'info');
+    navigator.geolocation.watchPosition(pos => {
+        const lat = pos.coords.latitude, lon = pos.coords.longitude;
+        if (gpsMarker) {
+            gpsMarker.setLatLng([lat, lon]);
+        } else {
+            gpsMarker = L.marker([lat, lon], {
+                icon: L.divIcon({
+                    className: 'gps-marker',
+                    html: '<div class="gps-dot"></div><div class="gps-pulse"></div>',
+                    iconSize: [24, 24], iconAnchor: [12, 12]
+                })
+            }).addTo(map);
+            map.setView([lat, lon], 14, { animate: true });
+            showToast('📍 Ubicación activada', 'success');
+        }
+    }, err => {
+        showToast('No se pudo obtener ubicación', 'error');
+        console.error(err);
+    }, { enableHighAccuracy: true, maximumAge: 5000 });
+}
+
 function showLoading(text = 'Cargando...') {
     document.getElementById('loadingText').textContent = text;
     document.getElementById('loadingOverlay').classList.add('show');
@@ -1550,6 +1590,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('sidebar').classList.toggle('show');
         document.getElementById('btnToggleSidebar').classList.toggle('active');
     });
+
+    document.getElementById('btnGPS')?.addEventListener('click', activarGPS);
 
     document.addEventListener('click', e => {
         if (window.innerWidth <= 768) {
