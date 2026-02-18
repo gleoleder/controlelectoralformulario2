@@ -259,6 +259,12 @@ body {
   background:rgba(139,92,246,.06);
 }
 
+/* GPS marker */
+.gps-marker{background:none!important;border:none!important}
+.gps-dot{width:14px;height:14px;background:#2563EB;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(37,99,235,.4);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2}
+.gps-pulse{width:24px;height:24px;background:rgba(37,99,235,.2);border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);animation:gpsPulse 2s infinite;z-index:1}
+@keyframes gpsPulse{0%{transform:translate(-50%,-50%) scale(1);opacity:.6}100%{transform:translate(-50%,-50%) scale(3);opacity:0}}
+
 /* ═══ BUTTONS ═══ */
 .btn-primary, .btn-secondary {
   padding:10px 20px;
